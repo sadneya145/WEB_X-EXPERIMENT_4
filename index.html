@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 15px rgba(0, 0, 0, 0.1);
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        input {
+            width: 95%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: none;
+            background-color: #22456b;
+            color: rgb(250, 247, 247);
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #336498;
+        }
+        .btn-delete {
+            background-color: #dc3545;
+        }
+        .btn-delete:hover {
+            background-color: #a71d2a;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 2px 2px 15px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background-color: #22456b;
+            color: rgb(250, 248, 248);
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                width: 90%;
+            }
+            table {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Student Management</h2>
+
+    <!-- Student Form -->
+    <div class="container">
+        <form id="studentForm">
+            <input type="hidden" id="studentId">
+            <input type="text" id="name" placeholder="Enter Name" required>
+            <input type="email" id="email" placeholder="Enter Email" required>
+            <input type="number" id="age" placeholder="Enter Age" required>
+            <input type="text" id="grade" placeholder="Enter Grade" required>
+            <button type="submit" id="submitButton">Add Student</button>
+        </form>
+    </div>
+
+    <!-- Students Table -->
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Age</th>
+                <th>Grade</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="studentsList">
+        </tbody>
+    </table>
+
+    <script>
+        const API_URL = "http://localhost:5000/students";
+
+        // Fetch and display students
+        async function fetchStudents() {
+            const response = await fetch(API_URL);
+            const students = await response.json();
+            const studentsList = document.getElementById("studentsList");
+            studentsList.innerHTML = "";
+
+            students.forEach(student => {
+                studentsList.innerHTML += `
+                    <tr>
+                        <td>${student.name}</td>
+                        <td>${student.email}</td>
+                        <td>${student.age}</td>
+                        <td>${student.grade}</td>
+                        <td class="action-buttons">
+                            <button onclick="editStudent('${student._id}')">Edit</button>
+                            <button class="btn-delete" onclick="deleteStudent('${student._id}')">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Add or update student
+        document.getElementById("studentForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const id = document.getElementById("studentId").value;
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const age = document.getElementById("age").value;
+            const grade = document.getElementById("grade").value;
+
+            const studentData = { name, email, age, grade };
+
+            if (id) {
+                // Update existing student
+                await fetch(`${API_URL}/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(studentData)
+                });
+                document.getElementById("submitButton").textContent = "Add Student";
+            } else {
+                // Add new student
+                await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(studentData)
+                });
+            }
+
+            this.reset();
+            document.getElementById("studentId").value = "";
+            fetchStudents();
+        });
+
+        // Delete a student
+        async function deleteStudent(id) {
+            await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+            fetchStudents();
+        }
+
+        // Edit a student (Pre-fill the form)
+        async function editStudent(id) {
+            const response = await fetch(`${API_URL}/${id}`);
+            const student = await response.json();
+
+            document.getElementById("studentId").value = student._id;
+            document.getElementById("name").value = student.name;
+            document.getElementById("email").value = student.email;
+            document.getElementById("age").value = student.age;
+            document.getElementById("grade").value = student.grade;
+
+            document.getElementById("submitButton").textContent = "Update Student";
+        }
+
+        fetchStudents();
+    </script>
+</body>
+</html>
