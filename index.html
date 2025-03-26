@@ -90,10 +90,8 @@
     </style>
 </head>
 <body>
-
     <h2>Student Management</h2>
-
-    <!-- Student Form -->
+    <div class="popup" id="popupMessage"></div>
     <div class="container">
         <form id="studentForm">
             <input type="hidden" id="studentId">
@@ -104,8 +102,6 @@
             <button type="submit" id="submitButton">Add Student</button>
         </form>
     </div>
-
-    <!-- Students Table -->
     <table>
         <thead>
             <tr>
@@ -116,90 +112,82 @@
                 <th>Actions</th>
             </tr>
         </thead>
-        <tbody id="studentsList">
-        </tbody>
+        <tbody id="studentsList"></tbody>
     </table>
-
     <script>
         const API_URL = "http://localhost:5000/students";
-
-        // Fetch and display students
+        
+        function showPopup(message, color = "#4caf50") {
+            const popup = document.getElementById("popupMessage");
+            popup.textContent = message;
+            popup.style.background = color;
+            popup.style.display = "block";
+            setTimeout(() => popup.style.display = "none", 2000);
+        }
+        
         async function fetchStudents() {
             const response = await fetch(API_URL);
             const students = await response.json();
-            const studentsList = document.getElementById("studentsList");
-            studentsList.innerHTML = "";
-
-            students.forEach(student => {
-                studentsList.innerHTML += `
-                    <tr>
-                        <td>${student.name}</td>
-                        <td>${student.email}</td>
-                        <td>${student.age}</td>
-                        <td>${student.grade}</td>
-                        <td class="action-buttons">
-                            <button onclick="editStudent('${student._id}')">Edit</button>
-                            <button class="btn-delete" onclick="deleteStudent('${student._id}')">Delete</button>
-                        </td>
-                    </tr>
-                `;
-            });
+            document.getElementById("studentsList").innerHTML = students.map(student => `
+                <tr>
+                    <td>${student.name}</td>
+                    <td>${student.email}</td>
+                    <td>${student.age}</td>
+                    <td>${student.grade}</td>
+                    <td class="action-buttons">
+                        <button onclick="editStudent('${student._id}')">Edit</button>
+                        <button class="btn-delete" onclick="deleteStudent('${student._id}')">Delete</button>
+                    </td>
+                </tr>`).join("");
         }
-
-        // Add or update student
+        
         document.getElementById("studentForm").addEventListener("submit", async function(event) {
             event.preventDefault();
-
             const id = document.getElementById("studentId").value;
-            const name = document.getElementById("name").value;
-            const email = document.getElementById("email").value;
-            const age = document.getElementById("age").value;
-            const grade = document.getElementById("grade").value;
-
-            const studentData = { name, email, age, grade };
-
+            const studentData = {
+                name: document.getElementById("name").value,
+                email: document.getElementById("email").value,
+                age: document.getElementById("age").value,
+                grade: document.getElementById("grade").value
+            };
+            
             if (id) {
-                // Update existing student
                 await fetch(`${API_URL}/${id}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(studentData)
                 });
-                document.getElementById("submitButton").textContent = "Add Student";
+                showPopup("Student updated successfully!", "#ffc107");
             } else {
-                // Add new student
                 await fetch(API_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(studentData)
                 });
+                showPopup("Student added successfully!");
             }
-
             this.reset();
             document.getElementById("studentId").value = "";
             fetchStudents();
         });
-
-        // Delete a student
+        
         async function deleteStudent(id) {
             await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+            showPopup("Student deleted successfully!", "#dc3545");
             fetchStudents();
         }
-
-        // Edit a student (Pre-fill the form)
+        
         async function editStudent(id) {
             const response = await fetch(`${API_URL}/${id}`);
             const student = await response.json();
-
             document.getElementById("studentId").value = student._id;
             document.getElementById("name").value = student.name;
             document.getElementById("email").value = student.email;
             document.getElementById("age").value = student.age;
             document.getElementById("grade").value = student.grade;
-
             document.getElementById("submitButton").textContent = "Update Student";
         }
-
+        
         fetchStudents();
     </script>
 </body>
